@@ -1,11 +1,45 @@
 <html>
   <head>
+		<link href="assets/style.css" rel="stylesheet">
+		<!-- <link href="assets/buttonStyle.sass" rel="stylesheet"> -->
     <title>Oculus Battle</title>
   </head>
 
   <body>
-    <canvas></canvas>
+		<h1 class='hdr'>Welcome to Oculus Battle!</h1>
+    <div class="cntr">
 
+	    <canvas></canvas>
+			<!-- <div class="start-btn" id="start">
+				Start!
+			</div> -->
+			<br>
+			<button id="start" class="button button--big button--success">
+				Start!
+			</button>
+
+			<article>
+<h1>Instructions</h1>
+<p><em><strong>Wait. I don't need instructions. Just tell me how to play.</strong></em></p>
+<p><em>Okay! Three quick steps!</em></p>
+<ul>
+	<li>You are blue. Click your base. (the one with the blue)</li>
+	<li>Click another base.</li>
+	<li>Repeat until red is gone.</li>
+</ul>
+<h2>Detailed Instructions</h2>
+<p>Oculus battle is a simplified RTS. The goal is to eliminate the enemy! You are the blue team and start on the left side of the map. The red team is the enemy and is controlled by the computer. The black team is neutral and cannot attack or generate units. </p>
+<h3>Playing the game:</h3>
+<p> You and your enemy both start with one base. Bases controlled by red or blue automatically generate units depending on their initial size. Bases can be selected with a mouse click. Once a base is selected you can then click another base to attack. Attacking sends half of a bases units to the second base clicked. You can also use this to reinforce your own bases. When a base goes below zero units it is taken over by the attacking team. A bases maximum size is twice its starting value. </p>
+<ul><strong>Recap:</strong>
+	<li>Bases generate units over time based on starting size.</li>
+	<li>Select a base by left clicking on it.</li>
+	<li>Attack a base by first selecting a base you own then clicking another base.</li>
+	<li>You can send units from bases you own to other bases you own.</li>
+	<li>When you take over a base it will begin generating units for you.</li>
+</ul>
+
+		</div>
 		<!-- TODO: Del? -->
     <!-- <script type="application/javascript" src="vendor/keymaster.js"></script> -->
 
@@ -22,18 +56,24 @@
     <script type="application/javascript">
       (function () {
         var canvasHTMLEl = document.getElementsByTagName("canvas")[0];
-        canvasHTMLEl.width = Oculus.Game.DIM_X;
+				var startBtn = document.getElementById("start");
+
+				canvasHTMLEl.width = Oculus.Game.DIM_X;
         canvasHTMLEl.height = Oculus.Game.DIM_Y;
 
         var context = canvasHTMLEl.getContext("2d");
-        var game = new Oculus.Game();
-        new Oculus.GameView(game, context).start();
 
 				offLeft = canvasHTMLEl.offsetLeft,
 				offRight = canvasHTMLEl.offsetTop
 
-				canvasHTMLEl.addEventListener('click', function(event) {
-						game.handleClick(event, offLeft, offRight);
+				startBtn.addEventListener('click', function(event) {
+						canvasHTMLEl.addEventListener('click', function(event) {
+								game.handleClick(event, offLeft, offRight);
+							},
+							false
+						);
+						var game = new Oculus.Game();
+						new Oculus.GameView(game, context).start();
 					},
 					false);
       })();

@@ -1,0 +1,94 @@
+// Lato font
+// @import url(https://fonts.googleapis.com/css?family=Lato:400,700);
+
+// Button colors
+// $button_color_array:       rgb(60,59,61), rgb(160,212,104), rgb(237,85,101), rgb(255,206,84), rgb(79,193,233);
+// $button_color_array-names: disabled, success, error, warning, message;
+
+.start-btn {
+	border: 1px solid;
+}
+
+.button {
+    font-weight: 700;
+    border-radius: 5px;
+    padding: .5em 1em;
+    display: inline-block;
+    color: rgb(60,59,61);
+    border: none;
+    background-color: rgb(204,209,217);
+    box-shadow: 0px 5px 0px 0px darken(rgb(204,209,217), 10);
+
+    &--small {
+        padding: .4em .75em;
+        font-size: .7em;
+    }
+
+    &--big {
+        padding: .75em 1.25em;
+        font-size: 1em;
+    }
+
+    &:hover {
+        background: lighten(rgb(204,209,217), 5);
+        cursor: pointer;
+    }
+
+    &:active {
+        transform: translate(0, 5px);
+        box-shadow: 0px 0px 0px 0px;
+    }
+
+    &:focus {
+        outline: 0;
+    }
+
+    // Build all the button classes
+    @each $color_name in $button_color_array-names {
+        $i: index($button_color_array-names, $color_name);
+        &--#{$color_name} {
+            color:rgb(245,247,250);
+            background-color: nth($button_color_array, $i);
+            box-shadow: 0px 5px 0px 0px darken(nth($button_color_array, $i), 10);
+            &:hover {
+                background: lighten(nth($button_color_array, $i), 5);
+            }
+        }
+    }
+
+    // some extra css for the disabled button
+    &--disabled {
+        &:hover {
+            cursor: not-allowed;
+        }
+        &:active {
+            transform: translate(0, 0);
+            box-shadow: 0px 5px 0px 0px darken(rgb(60,59,61), 10);
+        }
+    }
+
+}
+
+// Just some styling to make this pen a little bit prettier
+body {
+	// font-family: 'Lato', sans-serif;
+	background: rgb(72,207,173);
+	h1 {
+		text-align: center;
+		text-transform: uppercase;
+		font-weight: 700;
+		color: white;
+	}
+	section {
+		max-width: 1080px;
+		margin: auto;
+		h2 {
+			text-align: center;
+			font-weight: 400;
+		}
+		.buttons {
+			display: flex;
+			justify-content: space-around;
+		}
+	}
+}
