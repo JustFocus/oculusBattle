@@ -14,10 +14,11 @@
 				Start!
 			</div> -->
 			<br>
-			<button id="start" class="button button--big button--success">
-				Start!
-			</button>
-
+			<div class='btnctr'>
+				<button id="start" class="button button--big button--success">
+					Start!
+				</button>
+			</div>
 			<article>
 <h1>Instructions</h1>
 <p><em><strong>Wait. I don't need instructions. Just tell me how to play.</strong></em></p>
@@ -74,6 +75,7 @@
 						);
 						var game = new Oculus.Game();
 						new Oculus.GameView(game, context).start();
+						startBtn.remove()
 					},
 					false);
       })();

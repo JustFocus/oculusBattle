@@ -17,6 +17,10 @@
 	text-align: center;
 }
 
+.btnctr {
+	height: 30px
+}
+
 @import url(https://fonts.googleapis.com/css?family=Lato:400,700);
 .button {
   font-weight: 700;
