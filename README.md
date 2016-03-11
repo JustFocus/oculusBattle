@@ -27,7 +27,7 @@
 -	The AI's bases generate units faster as the levels progress.
 
 
-#Detailed Instructions
+#Instructions
 
 Oculus battle is a simplified RTS. The goal is to eliminate the enemy! You are the blue team and start on the left side of the map. The red team is the enemy and is controlled by the computer. The black team is neutral and cannot attack or generate units.
 
