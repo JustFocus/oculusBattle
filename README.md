@@ -13,7 +13,7 @@
 	![Level Layout 1](./assets/Gameplay.png)
 	![Level Layout 2](./assets/Gameplay2.png)
 - Randomly generated bases space themselves based on the number created and their size.
-- Bases outline color changes upon selection.
+- Bases outline color changes upon selection.                     
 	![Selected Base](./assets/SelectedBase.png)
 - Base selection determined based on cursor location and location of bases.
 
