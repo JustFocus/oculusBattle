@@ -87,7 +87,11 @@ async fn main() {
         if screen == Screen::Playing {
             ui::draw_base_values(&assets, &game, &fx, &view);
         }
-        ui::draw_hud(&assets, &game, &view);
+        // The title and intermission screens carry their own text; the HUD would only show a
+        // stale level number and empty unit totals there.
+        if interactive {
+            ui::draw_hud(&assets, &game, &view);
+        }
         match screen {
             Screen::Title => ui::draw_title(&assets, &view, state.time),
             Screen::Playing => ui::draw_intermission(&assets, &game, &view, state.time),

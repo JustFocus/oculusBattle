@@ -73,8 +73,8 @@ Boundary rules:
 | 2 | Particle system module in `oculus-game` (pool, emitters, presets) | Sonnet | 0 | done |
 | 3 | Repo hygiene: remove Jasmine boilerplate and stray files, move README screenshots to docs/, .gitignore, CI workflow | Haiku | 0 | done |
 | 4 | `oculus-game`: renderer, camera, input, screens, events -> particles | Sonnet | 1, 2 | done |
-| 5 | E2E verification in headless Chromium: original JS vs WASM, screenshots, scripted play | Sonnet | 4 | in progress |
-| 6 | Remove legacy JS, README rewrite, final lint/test pass, commit | lead + Haiku | 5 | todo |
+| 5 | E2E verification in headless Chromium: original JS vs WASM, screenshots, scripted play | Sonnet | 4 | done |
+| 6 | Remove legacy JS, README rewrite, final lint/test pass, commit | lead + Haiku | 5 | done |
 
 Quality gates for every task: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
 `cargo test --workspace`, and `scripts/build-web.sh` succeeding.
