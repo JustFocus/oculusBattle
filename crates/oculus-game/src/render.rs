@@ -1,7 +1,7 @@
 //! Board drawing in world space (background, bases, units, targeting arrow).
 //! The world camera must be active (see `View::camera`).
 
-use crate::assets::{Assets, MAP_SIZE};
+use crate::assets::Assets;
 use crate::effects::Effects;
 use crate::view::View;
 use macroquad::prelude::*;
@@ -85,10 +85,7 @@ pub fn draw_world(
 }
 
 fn draw_background(assets: &Assets) {
-    // Cover-crop the 16:9 map to the 16:10 board.
-    let board_aspect = WORLD_WIDTH / WORLD_HEIGHT;
-    let src_w = MAP_SIZE.y * board_aspect;
-    let src = Rect::new((MAP_SIZE.x - src_w) * 0.5, 0.0, src_w, MAP_SIZE.y);
+    // tools/artgen renders the map at exactly the board's aspect, so it maps 1:1 onto the world.
     draw_texture_ex(
         &assets.map,
         0.0,
@@ -96,7 +93,6 @@ fn draw_background(assets: &Assets) {
         WHITE,
         DrawTextureParams {
             dest_size: Some(vec2(WORLD_WIDTH, WORLD_HEIGHT)),
-            source: Some(src),
             ..Default::default()
         },
     );
@@ -151,9 +147,9 @@ fn draw_bases(
             ring(c, r - 0.5, t, s, col);
         }
         let sprite = if b.team == Team::Neutral {
-            &assets.beholder_neutral
+            &assets.base_neutral
         } else {
-            &assets.beholder
+            &assets.base
         };
         sprite.draw(c, r * 2.0, WHITE, dpi * s);
 
@@ -233,6 +229,6 @@ fn draw_units(assets: &Assets, game: &Game, px_per_unit: f32) {
         let col = team_color(u.team);
         draw_poly(c.x, c.y, 24, UNIT_RADIUS + 4.5, 0.0, alpha(col, 0.20));
         draw_poly(c.x, c.y, 24, UNIT_RADIUS + 2.0, 0.0, alpha(col, 0.45));
-        assets.eye.draw(c, UNIT_SPRITE, WHITE, px_per_unit);
+        assets.unit.draw(c, UNIT_SPRITE, WHITE, px_per_unit);
     }
 }

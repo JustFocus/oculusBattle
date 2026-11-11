@@ -50,10 +50,16 @@ cargo test --workspace
 - `web/` - HTML page shell and the vendored miniquad `gl.js` loader for the WebAssembly build.
 - `scripts/build-web.sh` - builds the WebAssembly bundle and assembles `dist/`.
 - `assets/` - map, images, and fonts.
+- `art/` - hand-authored SVG sprites for the bases and units.
+- `tools/artgen/` - generator for the game art (`assets/base.png`, `assets/unit.png`, `assets/map.jpg`).
 - `docs/MIGRATION.md` - migration plan and notes from the original JavaScript version.
 
 ## Credits
 
-The Cinzel font (`assets/fonts/Cinzel.ttf`) is licensed under the SIL Open Font License; see `assets/fonts/OFL.txt`.
+All art is original. The sprites are hand-authored SVG in `art/`, and the map is generated procedurally by `tools/artgen`. To regenerate `assets/base.png`, `assets/unit.png`, and `assets/map.jpg`, run:
 
-`assets/map.jpg` and `assets/beholder.png` are placeholder art from the original project. Replace them with original art before any public distribution.
+```sh
+cargo run -p artgen --release
+```
+
+The Cinzel font (`assets/fonts/Cinzel.ttf`) is licensed under the SIL Open Font License; see `assets/fonts/OFL.txt`.

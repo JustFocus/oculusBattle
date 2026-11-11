@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/oculus-core", "crates/oculus-game"]
+members = ["crates/oculus-core", "crates/oculus-game", "tools/artgen"]
 
 [workspace.package]
 edition = "2021"

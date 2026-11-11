@@ -1,28 +1,25 @@
 //! Embedded art and fonts. This is the single place to swap art later.
 //!
-//! Sprites are stored as a small mip chain (100, 50, 25 px ...) built at load time with a
-//! premultiplied box filter, so heavy downscales (a 100 px eye drawn at ~13 px) stay smooth
-//! instead of aliasing under plain bilinear sampling.
+//! Sprites are stored as a small mip chain (256, 128, 64, 32, 16 px for the base art) built at
+//! load time with a premultiplied box filter, so heavy downscales (a 128 px unit drawn at ~13 px)
+//! stay smooth instead of aliasing under plain bilinear sampling.
 
 use macroquad::prelude::*;
 
 const MAP_JPG: &[u8] = include_bytes!("../../../assets/map.jpg");
-const BEHOLDER_PNG: &[u8] = include_bytes!("../../../assets/beholder.png");
-const EYE_PNG: &[u8] = include_bytes!("../../../assets/eye.png");
+const BASE_PNG: &[u8] = include_bytes!("../../../assets/base.png");
+const UNIT_PNG: &[u8] = include_bytes!("../../../assets/unit.png");
 /// Cinzel by the Cinzel Project Authors, SIL Open Font License 1.1 (assets/fonts/OFL.txt).
 const FONT_TTF: &[u8] = include_bytes!("../../../assets/fonts/Cinzel.ttf");
-
-/// Intrinsic aspect of the background art, used to cover-crop it to the board.
-pub const MAP_SIZE: Vec2 = vec2(1920.0, 1080.0);
 
 pub struct Assets {
     pub font: Font,
     pub map: Texture2D,
     pub vignette: Texture2D,
-    pub beholder: Sprite,
-    /// Desaturated, dimmed beholder for neutral bases.
-    pub beholder_neutral: Sprite,
-    pub eye: Sprite,
+    pub base: Sprite,
+    /// Desaturated, dimmed base for neutral bases.
+    pub base_neutral: Sprite,
+    pub unit: Sprite,
 }
 
 impl Assets {
@@ -31,14 +28,14 @@ impl Assets {
         pregrow_font_atlas(&font);
         let map = Texture2D::from_file_with_format(MAP_JPG, None);
         map.set_filter(FilterMode::Linear);
-        let beholder_img = key_out_background(&decode_png(BEHOLDER_PNG));
+        let base_img = decode_png(BASE_PNG);
         Self {
             font,
             map,
             vignette: make_vignette(),
-            beholder_neutral: Sprite::from_image(&desaturate(&beholder_img, 0.8, 0.72)),
-            beholder: Sprite::from_image(&beholder_img),
-            eye: Sprite::from_image(&decode_png(EYE_PNG)),
+            base_neutral: Sprite::from_image(&desaturate(&base_img, 0.8, 0.72)),
+            base: Sprite::from_image(&base_img),
+            unit: Sprite::from_image(&decode_png(UNIT_PNG)),
         }
     }
 }
@@ -69,6 +66,9 @@ fn decode_png(bytes: &[u8]) -> Image {
     Image::from_file_with_format(bytes, Some(ImageFormat::Png)).expect("embedded png")
 }
 
+/// Smallest mip level kept for a sprite, in pixels along its shorter side.
+const MIN_LEVEL_PX: u16 = 16;
+
 /// A sprite with several pre-filtered sizes, largest first.
 pub struct Sprite {
     levels: Vec<Texture2D>,
@@ -86,7 +86,9 @@ impl Sprite {
             let t = Texture2D::from_image(&cur);
             t.set_filter(FilterMode::Linear);
             levels.push(t);
-            if cur.width < 24 || cur.height < 24 {
+            // Stop once the smaller side reaches MIN_LEVEL_PX. Any source size works: the chain
+            // ends at the first halving that lands at or below the minimum.
+            if cur.width.min(cur.height) <= MIN_LEVEL_PX {
                 break;
             }
             cur = downscale_half(&cur);
@@ -151,49 +153,6 @@ pub fn downscale_half(src: &Image) -> Image {
         bytes: out,
         width: dw as u16,
         height: dh as u16,
-    }
-}
-
-/// The beholder art ships on an opaque white square. Flood-fills near-white pixels connected to
-/// the image border and makes them transparent, leaving the round medallion.
-fn key_out_background(src: &Image) -> Image {
-    let (w, h) = (src.width as usize, src.height as usize);
-    let mut bytes = src.bytes.clone();
-    let is_bg = |b: &[u8], x: usize, y: usize| {
-        let i = (y * w + x) * 4;
-        b[i + 3] > 0 && b[i].min(b[i + 1]).min(b[i + 2]) >= 215
-    };
-    let mut stack: Vec<(usize, usize)> = Vec::new();
-    for x in 0..w {
-        stack.push((x, 0));
-        stack.push((x, h - 1));
-    }
-    for y in 0..h {
-        stack.push((0, y));
-        stack.push((w - 1, y));
-    }
-    while let Some((x, y)) = stack.pop() {
-        if !is_bg(&bytes, x, y) {
-            continue;
-        }
-        bytes[(y * w + x) * 4 + 3] = 0;
-        if x > 0 {
-            stack.push((x - 1, y));
-        }
-        if y > 0 {
-            stack.push((x, y - 1));
-        }
-        if x + 1 < w {
-            stack.push((x + 1, y));
-        }
-        if y + 1 < h {
-            stack.push((x, y + 1));
-        }
-    }
-    Image {
-        bytes,
-        width: src.width,
-        height: src.height,
     }
 }
 
@@ -264,29 +223,6 @@ mod tests {
         let d = downscale_half(&img(8, 6, [200, 100, 50, 255]));
         assert_eq!((d.width, d.height), (4, 3));
         assert_eq!(&d.bytes[..4], &[200, 100, 50, 255]);
-    }
-
-    #[test]
-    fn background_key_clears_border_but_keeps_interior_white() {
-        // 5x5 white image with a dark ring around a white center pixel.
-        let mut s = img(5, 5, [255, 255, 255, 255]);
-        for (x, y) in [
-            (1, 1),
-            (2, 1),
-            (3, 1),
-            (1, 2),
-            (3, 2),
-            (1, 3),
-            (2, 3),
-            (3, 3),
-        ] {
-            let i = (y * 5 + x) * 4;
-            s.bytes[i..i + 3].copy_from_slice(&[20, 20, 20]);
-        }
-        let k = key_out_background(&s);
-        assert_eq!(k.bytes[3], 0, "corner cleared");
-        assert_eq!(k.bytes[(2 * 5 + 2) * 4 + 3], 255, "enclosed white kept");
-        assert_eq!(k.bytes[(5 + 1) * 4 + 3], 255, "dark ring kept");
     }
 
     #[test]

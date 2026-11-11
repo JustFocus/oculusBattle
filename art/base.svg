@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- The Watcher: obsidian orb sentinel with one great lidded eye and four rim eyes.
+       Content stays inside r=120 around (128,128). Ids prefixed g- are gradients. -->
+  <defs>
+    <radialGradient id="g-shell" cx="38%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#5a4478"/>
+      <stop offset="0.45" stop-color="#2a1d3d"/>
+      <stop offset="1" stop-color="#0b0713"/>
+    </radialGradient>
+    <radialGradient id="g-rim" cx="50%" cy="50%" r="50%">
+      <stop offset="0.82" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0.65"/>
+    </radialGradient>
+    <radialGradient id="g-bounce" cx="68%" cy="85%" r="40%">
+      <stop offset="0" stop-color="#7a4fc0" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#7a4fc0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="g-lid-top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#47325f"/>
+      <stop offset="1" stop-color="#1a1028"/>
+    </linearGradient>
+    <linearGradient id="g-lid-bottom" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#2f2044"/>
+      <stop offset="1" stop-color="#150d20"/>
+    </linearGradient>
+    <radialGradient id="g-sclera" cx="45%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#f6ecee"/>
+      <stop offset="0.6" stop-color="#d8c4d8"/>
+      <stop offset="1" stop-color="#8a6a9c"/>
+    </radialGradient>
+    <radialGradient id="g-iris" cx="50%" cy="50%" r="50%">
+      <stop offset="0.74" stop-color="#ffb347"/>
+      <stop offset="0.8" stop-color="#e5553a"/>
+      <stop offset="0.9" stop-color="#8a2fd0"/>
+      <stop offset="1" stop-color="#3a1275"/>
+    </radialGradient>
+    <radialGradient id="g-pupil" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#05030a"/>
+      <stop offset="0.85" stop-color="#0a0614"/>
+      <stop offset="1" stop-color="#1c1030"/>
+    </radialGradient>
+    <filter id="f-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="f-soft"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="f-grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="7" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.6  0 0 0 0 0.5  0 0 0 0 0.8  0 0 0 0.9 -0.35"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+    <clipPath id="c-orb"><circle cx="128" cy="128" r="120"/></clipPath>
+    <!-- the almond lid opening -->
+    <clipPath id="c-opening"><path d="M20 128 Q128 -6 236 128 Q128 262 20 128Z"/></clipPath>
+    <clipPath id="c-iris"><circle cx="128" cy="128" r="70"/></clipPath>
+  </defs>
+
+  <!-- Layer 1: orb body -->
+  <circle id="body" cx="128" cy="128" r="120" fill="url(#g-shell)"/>
+  <g clip-path="url(#c-orb)">
+    <!-- Layer 2: stone grain, bounce light, dark rim -->
+    <circle id="grain-layer" cx="128" cy="128" r="120" fill="#fff" filter="url(#f-grain)" opacity="0.5"/>
+    <circle cx="128" cy="128" r="120" fill="url(#g-bounce)"/>
+    <circle cx="128" cy="128" r="120" fill="url(#g-rim)"/>
+
+    <!-- Layer 3: carved grooves following the curve of the sphere (dark cut with a lit lower edge) -->
+    <g id="grooves" fill="none" stroke-linecap="round">
+      <g stroke="#000" stroke-width="3" opacity="0.7">
+        <path d="M60 36 Q128 4 196 36"/>
+        <path d="M60 220 Q128 252 196 220"/>
+      </g>
+      <g stroke="#8a62c8" stroke-width="1" opacity="0.55" transform="translate(0 1.5)">
+        <path d="M60 36 Q128 4 196 36"/>
+        <path d="M60 220 Q128 252 196 220"/>
+      </g>
+    </g>
+
+    <!-- Layer 4: glowing cracks, thick with bright core -->
+    <g id="cracks" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#f-glow)">
+      <g stroke="#9a5cf0" stroke-width="3.2">
+        <path id="crack-l" d="M30 128 L16 120 L10 104 M16 120 L8 132"/>
+        <path id="crack-r" d="M226 128 L240 136 L246 152 M240 136 L248 124"/>
+        <path d="M128 30 L134 16 L128 6 M134 16 L146 12"/>
+        <path d="M128 226 L122 240 L128 250 M122 240 L110 244"/>
+      </g>
+      <g stroke="#e3c8ff" stroke-width="1" opacity="0.8">
+        <path d="M30 128 L16 120 L10 104 M16 120 L8 132"/>
+        <path d="M226 128 L240 136 L246 152 M240 136 L248 124"/>
+        <path d="M128 30 L134 16 L128 6 M134 16 L146 12"/>
+        <path d="M128 226 L122 240 L128 250 M122 240 L110 244"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Layer 5: four rim eyes on the diagonals, large and bold. Slit pupils, glowing amber. -->
+  <g id="rim-eyes">
+    <g id="rim-eye" transform="translate(128 128) rotate(-45) translate(0 -97)">
+      <path d="M-17 0 Q0 -15 17 0 Q0 13 -17 0Z" fill="#0a0612" stroke="#8a62c8" stroke-width="2"/>
+      <path d="M-13 0 Q0 -10 13 0 Q0 9 -13 0Z" fill="#ffb347"/>
+      <ellipse cx="0" cy="0" rx="3" ry="7" fill="#07040d"/>
+      <path d="M-18 1 Q0 -16 18 1 L18 -3 Q0 -20 -18 -3Z" fill="#2a1d3d" stroke="#8a62c8" stroke-width="1"/>
+    </g>
+    <use href="#rim-eye" transform="rotate(90 128 128)"/>
+    <use href="#rim-eye" transform="rotate(180 128 128)"/>
+    <use href="#rim-eye" transform="rotate(270 128 128)"/>
+  </g>
+
+  <!-- Layer 6: central eye. Everything inside is clipped to the almond opening. -->
+  <g id="central-eye">
+    <g clip-path="url(#c-opening)">
+      <rect id="sclera" x="20" y="40" width="216" height="176" fill="url(#g-sclera)"/>
+      <!-- violet veins -->
+      <g id="veins" fill="none" stroke="#7a2fb0" stroke-width="1.6" stroke-linecap="round" opacity="0.75">
+        <path d="M24 128 Q42 120 58 116 M40 122 Q44 110 52 104 M44 124 Q50 136 60 140"/>
+        <path d="M232 128 Q214 136 198 140 M216 134 Q212 146 204 152 M212 132 Q206 120 196 116"/>
+      </g>
+      <!-- iris: wide band, bright inner ring near the pupil -->
+      <circle id="iris" cx="128" cy="128" r="70" fill="url(#g-iris)"/>
+      <g id="iris-fibres" clip-path="url(#c-iris)" fill="none" stroke-linecap="round">
+        <g stroke="#ffd98a" stroke-width="1.6" opacity="0.6">
+          <path d="M128 78 L128 56"/>
+          <path d="M128 78 L128 56" transform="rotate(12 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(24 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(36 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(48 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(60 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(72 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(84 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(96 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(108 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(120 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(132 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(144 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(156 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(168 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(180 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(192 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(204 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(216 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(228 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(240 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(252 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(264 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(276 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(288 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(300 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(312 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(324 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(336 128 128)"/>
+          <path d="M128 78 L128 56" transform="rotate(348 128 128)"/>
+        </g>
+      </g>
+      <circle cx="128" cy="128" r="70" fill="none" stroke="#1e0a40" stroke-width="3"/>
+      <!-- pupil: large flat dark disk for the unit count -->
+      <circle id="pupil" cx="128" cy="128" r="53" fill="url(#g-pupil)"/>
+      <circle cx="128" cy="128" r="53" fill="none" stroke="#000" stroke-width="2"/>
+      <!-- specular arc at the pupil edge, clear of the number -->
+      <path id="highlight" d="M92 112 Q98 94 118 87" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+      <!-- shadow cast by the lids onto the eye -->
+      <path d="M20 128 Q128 -6 236 128 Q128 262 20 128Z" fill="none" stroke="#12081f" stroke-opacity="0.8" stroke-width="14" filter="url(#f-soft)"/>
+    </g>
+
+    <!-- Fleshy stone lids: thick rims around the opening, with creases -->
+    <path id="lid-upper-flesh" d="M20 128 Q128 -6 236 128 L230 120 Q128 -22 26 120Z" fill="url(#g-lid-top)"/>
+    <path id="lid-lower-flesh" d="M20 128 Q128 262 236 128 L216 150 Q128 268 40 150Z" fill="url(#g-lid-bottom)"/>
+    <path id="lid-upper-rim" d="M14 128 Q128 -16 242 128 Q128 -6 14 128Z" fill="none"/>
+    <path id="lid-upper" d="M20 128 Q128 -6 236 128" fill="none" stroke="#3c2a56" stroke-width="7" stroke-linecap="round"/>
+    <path id="lid-lower" d="M20 128 Q128 262 236 128" fill="none" stroke="#2b1c40" stroke-width="7" stroke-linecap="round"/>
+    <!-- wet rim highlight along the opening -->
+    <path id="lid-wet-upper" d="M22 126 Q128 -4 234 126" fill="none" stroke="#d9b8ff" stroke-opacity="0.75" stroke-width="1.6" stroke-linecap="round"/>
+    <path id="lid-wet-lower" d="M26 134 Q128 258 230 134" fill="none" stroke="#b690ff" stroke-opacity="0.45" stroke-width="1.2" stroke-linecap="round"/>
+    <!-- creases -->
+    <g id="creases" fill="none" stroke-linecap="round">
+      <path d="M26 120 Q128 -22 230 120" stroke="#000" stroke-opacity="0.7" stroke-width="3"/>
+      <path d="M26 121.5 Q128 -20.5 230 121.5" stroke="#9a72d8" stroke-opacity="0.4" stroke-width="1"/>
+      <path d="M40 150 Q128 268 216 150" stroke="#000" stroke-opacity="0.6" stroke-width="2.5"/>
+      <path d="M40 151.5 Q128 269.5 216 151.5" stroke="#9a72d8" stroke-opacity="0.3" stroke-width="1"/>
+    </g>
+  </g>
+
+  <!-- Layer 7: outer edge and top-left sheen -->
+  <circle id="edge" cx="128" cy="128" r="119.5" fill="none" stroke="#0a0612" stroke-width="1.5"/>
+  <path id="sheen" d="M46 82 Q62 50 100 32" fill="none" stroke="#fff" stroke-opacity="0.2" stroke-width="5" stroke-linecap="round"/>
+</svg>
