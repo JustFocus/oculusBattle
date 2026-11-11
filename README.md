@@ -10,18 +10,18 @@
 ### Bases
 
 - Except for the “home” locations, base locations are randomly generated each time the game is started or a new level begins.
-	![Level Layout 1](./assets/Gameplay.png)
-	![Level Layout 2](./assets/Gameplay2.png)
+	![Level Layout 1](./docs/images/Gameplay.png)
+	![Level Layout 2](./docs/images/Gameplay2.png)
 - Randomly generated bases space themselves based on the number created and their size.
 - Bases outline color changes upon selection.                     
-	![Selected Base](./assets/SelectedBase.png)
+	![Selected Base](./docs/images/SelectedBase.png)
 - Base selection determined based on cursor location and location of bases.
 
 ### Units
 
 - Units are spawned at random locations surrounding the base that created them.
 - Upon spawning units calculate velocity vector to final target. Code below shows util function for vector calculations.
-	![Attack Base](./assets/Attack.png)
+	![Attack Base](./docs/images/Attack.png)
 	```javascript
 		var calcVec = Utils.calcVec = function (startPos, endPos, speed) {
 			var xDist = (startPos[0] - endPos[0]);
