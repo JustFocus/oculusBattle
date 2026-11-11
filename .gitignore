@@ -1,0 +1,4 @@
+/target
+/dist
+.DS_Store
+art/map.generated.svg

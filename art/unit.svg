@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Unit: glossy eyeball. Bold, simple shapes so it survives ~14 px display. -->
+  <defs>
+    <radialGradient id="g-sclera" cx="40%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="0.65" stop-color="#efe4cf"/>
+      <stop offset="1" stop-color="#b08f78"/>
+    </radialGradient>
+    <radialGradient id="g-iris" cx="50%" cy="50%" r="50%">
+      <stop offset="0.3" stop-color="#ffd24a"/>
+      <stop offset="0.8" stop-color="#e08a10"/>
+      <stop offset="1" stop-color="#8a3d05"/>
+    </radialGradient>
+    <clipPath id="ball"><circle cx="64" cy="64" r="60"/></clipPath>
+  </defs>
+
+  <!-- Layer 1: sclera -->
+  <circle id="sclera" cx="64" cy="64" r="60" fill="url(#g-sclera)"/>
+  <!-- Layer 2: faint veins (sparse and bold so they survive downscaling) -->
+  <g id="veins" clip-path="url(#ball)" fill="none" stroke="#d2473f" stroke-width="2" stroke-linecap="round" opacity="0.5">
+    <path d="M6 52 Q18 56 28 66"/>
+    <path d="M122 76 Q108 72 100 60"/>
+    <path d="M40 120 Q46 106 52 100"/>
+  </g>
+  <!-- Layer 3: iris, streaks, pupil -->
+  <circle id="iris" cx="64" cy="64" r="36" fill="url(#g-iris)"/>
+  <g id="iris-streaks" stroke="#fff0a0" stroke-width="3" stroke-linecap="round" opacity="0.6">
+    <path d="M64 64 L64 34"/>
+    <path d="M64 64 L64 34" transform="rotate(45 64 64)"/>
+    <path d="M64 64 L64 34" transform="rotate(90 64 64)"/>
+    <path d="M64 64 L64 34" transform="rotate(135 64 64)"/>
+    <path d="M64 64 L64 34" transform="rotate(180 64 64)"/>
+    <path d="M64 64 L64 34" transform="rotate(225 64 64)"/>
+    <path d="M64 64 L64 34" transform="rotate(270 64 64)"/>
+    <path d="M64 64 L64 34" transform="rotate(315 64 64)"/>
+  </g>
+  <circle id="iris-ring" cx="64" cy="64" r="36" fill="none" stroke="#5a2503" stroke-width="3"/>
+  <circle id="pupil" cx="64" cy="64" r="17" fill="#0b0508"/>
+  <!-- Layer 4: soft shading at the lower right edge of the ball -->
+  <circle id="edge-shade" cx="64" cy="64" r="59" fill="none" stroke="#6b4a3a" stroke-opacity="0.45" stroke-width="3"/>
+  <!-- Layer 5: specular highlights -->
+  <ellipse id="highlight" cx="50" cy="48" rx="9" ry="7" fill="#fff" transform="rotate(-30 50 48)"/>
+  <circle id="highlight-small" cx="78" cy="80" r="3" fill="#fff" fill-opacity="0.75"/>
+</svg>

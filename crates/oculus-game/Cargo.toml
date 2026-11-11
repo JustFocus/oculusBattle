@@ -1,0 +1,17 @@
+[package]
+name = "oculus-game"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "oculus-battle"
+path = "src/main.rs"
+
+[dependencies]
+oculus-core = { path = "../oculus-core" }
+macroquad = { version = "0.4.16", default-features = false }
+# Same `image` version macroquad uses; enabling "jpeg" here unifies the feature so
+# macroquad's texture loader can decode assets/map.jpg.
+image = { version = "0.24", default-features = false, features = ["jpeg"] }
