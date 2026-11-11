@@ -45,7 +45,7 @@ pub struct Base {
     pub radius: f32,
     pub team: Team,
     /// Current unit count. Fractional because bases grow every tick;
-    /// display with `value.round()`... (the original showed `Math.round`).
+    /// display with `value.round()` (the original showed `Math.round`).
     pub value: f32,
     /// Initial value; growth caps at `2 * start_value`.
     pub start_value: f32,
