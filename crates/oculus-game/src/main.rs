@@ -1,3 +1,6 @@
+#[allow(dead_code)]
+mod particles;
+
 use macroquad::prelude::*;
 
 fn window_conf() -> Conf {
