@@ -66,15 +66,15 @@ Boundary rules:
 
 ## Tasks
 
-| # | Task | Owner | Depends on |
-|---|------|-------|------------|
-| 0 | Toolchain, workspace scaffold, core API contract, web build pipeline | lead | - |
-| 1 | `oculus-core`: port rules + RNG + unit tests | Sonnet | 0 |
-| 2 | Particle system module in `oculus-game` (pool, emitters, presets) | Sonnet | 0 |
-| 3 | Repo hygiene: remove Jasmine boilerplate and stray files, move README screenshots to docs/, .gitignore, CI workflow | Haiku | 0 |
-| 4 | `oculus-game`: renderer, camera, input, screens, events -> particles | Sonnet | 1, 2 |
-| 5 | E2E verification in headless Chromium: original JS vs WASM, screenshots, scripted play | Sonnet | 4 |
-| 6 | Remove legacy JS, README rewrite, final lint/test pass, commit | lead + Haiku | 5 |
+| # | Task | Owner | Depends on | Status |
+|---|------|-------|------------|--------|
+| 0 | Toolchain, workspace scaffold, core API contract, web build pipeline | lead | - | done |
+| 1 | `oculus-core`: port rules + RNG + unit tests | Sonnet | 0 | done |
+| 2 | Particle system module in `oculus-game` (pool, emitters, presets) | Sonnet | 0 | done |
+| 3 | Repo hygiene: remove Jasmine boilerplate and stray files, move README screenshots to docs/, .gitignore, CI workflow | Haiku | 0 | done |
+| 4 | `oculus-game`: renderer, camera, input, screens, events -> particles | Sonnet | 1, 2 | done |
+| 5 | E2E verification in headless Chromium: original JS vs WASM, screenshots, scripted play | Sonnet | 4 | in progress |
+| 6 | Remove legacy JS, README rewrite, final lint/test pass, commit | lead + Haiku | 5 | todo |
 
 Quality gates for every task: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
 `cargo test --workspace`, and `scripts/build-web.sh` succeeding.
