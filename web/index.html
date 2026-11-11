@@ -12,6 +12,22 @@
 <body>
   <canvas id="glcanvas" tabindex="1"></canvas>
   <script src="gl.js"></script>
-  <script>load("oculus-battle.wasm");</script>
+  <script>
+    // gl.js already declares a global `canvas`, so this block keeps its own names local.
+    {
+      const glcanvas = document.getElementById("glcanvas");
+      // Ctrl-click is a game command (multi-select); on macOS it would also open the context menu.
+      glcanvas.addEventListener("contextmenu", (e) => e.preventDefault());
+      // A modifier released while the page is unfocused (cmd-tab, a dialog) never reaches the
+      // canvas, so the game would think it is still held. Release them all when focus leaves.
+      const modifiers = ["ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "MetaLeft", "MetaRight"];
+      window.addEventListener("blur", () => {
+        for (const code of modifiers) {
+          glcanvas.dispatchEvent(new KeyboardEvent("keyup", { code }));
+        }
+      });
+    }
+    load("oculus-battle.wasm");
+  </script>
 </body>
 </html>

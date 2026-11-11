@@ -154,8 +154,8 @@
       <!-- pupil: large flat dark disk for the unit count -->
       <circle id="pupil" cx="128" cy="128" r="53" fill="url(#g-pupil)"/>
       <circle cx="128" cy="128" r="53" fill="none" stroke="#000" stroke-width="2"/>
-      <!-- specular arc at the pupil edge, clear of the number -->
-      <path id="highlight" d="M92 112 Q98 94 118 87" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="4" stroke-linecap="round"/>
+      <!-- No specular glint on the pupil: the unit count covers it, and on small bases the digits
+           reach the pupil edge, so any glint reads as a stray mark on the number. -->
       <!-- shadow cast by the lids onto the eye -->
       <path d="M20 128 Q128 -6 236 128 Q128 262 20 128Z" fill="none" stroke="#12081f" stroke-opacity="0.8" stroke-width="14" filter="url(#f-soft)"/>
     </g>

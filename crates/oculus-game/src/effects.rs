@@ -3,17 +3,23 @@
 use crate::particles::{presets, ParticleRenderer, ParticleSim};
 use crate::render::team_color;
 use macroquad::prelude::*;
-use oculus_core::{BaseId, Game, GameEvent, TICK_SECONDS};
+use oculus_core::{BaseId, Game, GameEvent, Team, TICK_SECONDS};
 use std::collections::HashMap;
 
 /// How long the ownership "pop" on a base lasts, in seconds.
 const POP_SECONDS: f32 = 0.55;
+/// Time for the "full" pulse to fade in or out when a base reaches or leaves its cap.
+const FULL_FADE_SECONDS: f32 = 0.35;
+/// One breath of the "full" pulse, in seconds.
+const FULL_PERIOD_SECONDS: f64 = 1.6;
 
 pub struct Effects {
     sim: ParticleSim,
     renderer: ParticleRenderer,
     /// Remaining pop animation per base, 1.0 (just captured) down to 0.0.
     pops: HashMap<BaseId, f32>,
+    /// How strongly each base shows the "full" pulse, 0.0..=1.0, eased in and out.
+    full: HashMap<BaseId, f32>,
 }
 
 impl Effects {
@@ -23,6 +29,7 @@ impl Effects {
             sim: ParticleSim::new(),
             renderer: ParticleRenderer::new(),
             pops: HashMap::new(),
+            full: HashMap::new(),
         }
     }
 
@@ -33,6 +40,7 @@ impl Effects {
                 GameEvent::LevelStarted { .. } => {
                     self.sim.clear();
                     self.pops.clear();
+                    self.full.clear();
                 }
                 GameEvent::UnitArrived {
                     base,
@@ -78,6 +86,34 @@ impl Effects {
                 dt,
             );
         }
+    }
+
+    /// Eases each owned base's "full" pulse toward on (at the growth cap) or off.
+    pub fn track_full(&mut self, game: &Game, dt: f32) {
+        let step = dt / FULL_FADE_SECONDS;
+        for b in game.bases() {
+            let target = if b.team != Team::Neutral && b.is_full() {
+                1.0
+            } else {
+                0.0
+            };
+            let e = self.full.entry(b.id).or_insert(0.0);
+            *e = if target > *e {
+                (*e + step).min(target)
+            } else {
+                (*e - step).max(target)
+            };
+        }
+    }
+
+    /// 0.0..=1.0: how far a full base is into its current breath (0 when not full).
+    pub fn full_pulse(&self, base: BaseId, time: f64) -> f32 {
+        let env = self.full.get(&base).copied().unwrap_or(0.0);
+        if env == 0.0 {
+            return 0.0;
+        }
+        let wave = 0.5 - 0.5 * (time * std::f64::consts::TAU / FULL_PERIOD_SECONDS).cos();
+        env * wave as f32
     }
 
     pub fn update(&mut self, dt: f32) {

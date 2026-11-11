@@ -9,9 +9,19 @@ The game is written in Rust and rendered with [macroquad](https://macroquad.rs).
 - You and the enemy each start with one base. Blue and red bases generate units over time, based on their starting size.
 - Click a base to select it, then click another base to send units there.
 - Sending units moves half of the selected base's units to the target. Use this to attack enemy or neutral bases, or to reinforce your own.
-- A base can grow to twice its starting size.
+- A base can grow to twice its starting size. A full base pulses gently: it stops producing until you spend some of its units.
 - When a base drops to zero units, it flips to the attacking team and begins generating units for them.
 - The computer's bases grow faster with each level.
+- The bar above the board shows each side's total units, the level and how long the level has been running.
+
+### Shortcuts
+
+| Input | Action |
+|---|---|
+| Shift-click a base | Send from every one of your bases to it at once |
+| Ctrl-click (Cmd-click on macOS) your base | Add it to, or remove it from, the selection; then click a target to send from all selected bases |
+| A | Select all your bases |
+| Esc | Clear the selection |
 
 ## Building and running
 

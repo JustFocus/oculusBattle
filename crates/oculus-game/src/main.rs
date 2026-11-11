@@ -9,7 +9,7 @@ mod view;
 use assets::Assets;
 use effects::Effects;
 use macroquad::prelude::*;
-use oculus_core::{Game, Phase, Point, TICK_SECONDS};
+use oculus_core::{ClickMode, Game, Phase, Point, TICK_SECONDS};
 use render::BoardState;
 use timing::{clamp_dt, Stepper};
 use view::View;
@@ -21,6 +21,23 @@ fn window_conf() -> Conf {
         window_height: 625,
         high_dpi: true,
         ..Default::default()
+    }
+}
+
+/// The click mode chosen by the modifier keys held right now. Shift wins over ctrl/cmd.
+fn click_mode() -> ClickMode {
+    let down = |keys: &[KeyCode]| keys.iter().any(|&k| is_key_down(k));
+    if down(&[KeyCode::LeftShift, KeyCode::RightShift]) {
+        ClickMode::All
+    } else if down(&[
+        KeyCode::LeftControl,
+        KeyCode::RightControl,
+        KeyCode::LeftSuper,
+        KeyCode::RightSuper,
+    ]) {
+        ClickMode::Toggle
+    } else {
+        ClickMode::Single
     }
 }
 
@@ -46,6 +63,7 @@ async fn main() {
         let dt = clamp_dt(get_frame_time());
         let view = View::fit(screen_width(), screen_height(), ui::HUD_HEIGHT);
         let mouse = view.to_world(Vec2::from(mouse_position()));
+        let mode = click_mode();
 
         if is_mouse_button_pressed(MouseButton::Left) {
             match screen {
@@ -54,10 +72,19 @@ async fn main() {
                     stepper.reset();
                 }
                 Screen::Playing => {
-                    game.click(Point::new(mouse.x, mouse.y));
+                    game.click_with(Point::new(mouse.x, mouse.y), mode);
                     fx.handle_events(&game.drain_events(), &game);
                 }
             }
+        }
+        if screen == Screen::Playing {
+            if is_key_pressed(KeyCode::A) {
+                game.select_all();
+            }
+            if is_key_pressed(KeyCode::Escape) {
+                game.clear_selection();
+            }
+            fx.handle_events(&game.drain_events(), &game);
         }
 
         if screen == Screen::Playing {
@@ -67,16 +94,14 @@ async fn main() {
             }
             fx.trails(&game, dt);
         }
+        fx.track_full(&game, dt);
         fx.update(dt);
 
         let interactive = screen == Screen::Playing && game.phase() == Phase::Playing;
-        let state = BoardState {
-            hover: if interactive {
-                render::actionable_hover(&game, mouse)
-            } else {
-                None
-            },
-            time: get_time(),
+        let state = if interactive {
+            BoardState::new(&game, mouse, mode, get_time())
+        } else {
+            BoardState::idle(get_time())
         };
 
         clear_background(render::BAR_COLOR);
@@ -85,7 +110,7 @@ async fn main() {
         set_default_camera();
         ui::draw_bars(&view);
         if screen == Screen::Playing {
-            ui::draw_base_values(&assets, &game, &fx, &view);
+            ui::draw_base_values(&assets, &game, &fx, &view, state.time);
         }
         // The title and intermission screens carry their own text; the HUD would only show a
         // stale level number and empty unit totals there.

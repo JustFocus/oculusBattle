@@ -5,7 +5,7 @@ use crate::assets::Assets;
 use crate::effects::Effects;
 use crate::view::View;
 use macroquad::prelude::*;
-use oculus_core::{BaseId, Game, Team, UNIT_RADIUS, WORLD_HEIGHT, WORLD_WIDTH};
+use oculus_core::{BaseId, ClickMode, Game, Point, Team, UNIT_RADIUS, WORLD_HEIGHT, WORLD_WIDTH};
 
 pub const BAR_COLOR: Color = Color::new(0.035, 0.035, 0.055, 1.0);
 const SELECT_COLOR: Color = Color::new(0.62, 0.86, 1.0, 1.0);
@@ -23,6 +23,18 @@ pub fn team_color(team: Team) -> Color {
 fn alpha(c: Color, a: f32) -> Color {
     Color::new(c.r, c.g, c.b, a)
 }
+
+fn toward_white(c: Color, k: f32) -> Color {
+    Color::new(
+        c.r + (1.0 - c.r) * k,
+        c.g + (1.0 - c.g) * k,
+        c.b + (1.0 - c.b) * k,
+        c.a,
+    )
+}
+
+/// How much a full base grows at the peak of its pulse (fraction of its radius).
+pub const FULL_PULSE_GROWTH: f32 = 0.05;
 
 /// Ring thickness in world units: grows with value like the original, capped.
 pub fn ring_thickness(team: Team, value: f32) -> f32 {
@@ -57,15 +69,49 @@ fn ring(c: Vec2, inner: f32, thickness: f32, scale: f32, color: Color) {
 pub struct BoardState {
     /// Base under the cursor that a click would act on (None when not interactive).
     pub hover: Option<BaseId>,
+    /// Bases that would send units if the hovered base were clicked: the selection, or every
+    /// player base while the send-all modifier is held.
+    pub armed: Vec<BaseId>,
+    /// Whether a click on the hovered base would toggle it in the selection instead of sending.
+    pub toggling: bool,
     pub time: f64,
 }
 
-/// The base the cursor is over, if clicking it right now would do something.
-pub fn actionable_hover(game: &Game, world: Vec2) -> Option<BaseId> {
-    let id = game.base_at(oculus_core::Point::new(world.x, world.y))?;
-    match game.selected() {
-        None => (game.bases()[id].team == Team::Player).then_some(id),
-        Some(sel) => (sel != id).then_some(id),
+impl BoardState {
+    /// What the cursor would do right now with modifier `mode`.
+    pub fn new(game: &Game, world: Vec2, mode: ClickMode, time: f64) -> Self {
+        let armed = match mode {
+            ClickMode::All => game.player_bases().collect(),
+            _ => game.selected().to_vec(),
+        };
+        let hover = game.base_at(Point::new(world.x, world.y)).filter(|&id| {
+            let own = game.bases()[id].team == Team::Player;
+            match mode {
+                ClickMode::All => armed.iter().any(|&b| b != id),
+                ClickMode::Toggle if own => true,
+                _ if armed.is_empty() => own,
+                // Clicking the only selected base just deselects it.
+                _ => armed != [id],
+            }
+        });
+        let toggling = mode == ClickMode::Toggle
+            && hover.is_some_and(|id| game.bases()[id].team == Team::Player);
+        Self {
+            hover,
+            armed,
+            toggling,
+            time,
+        }
+    }
+
+    /// Nothing hovered or armed (title screen, intermission).
+    pub fn idle(time: f64) -> Self {
+        Self {
+            hover: None,
+            armed: Vec::new(),
+            toggling: false,
+            time,
+        }
     }
 }
 
@@ -128,9 +174,11 @@ fn draw_bases(
     for b in game.bases() {
         let c = vec2(b.pos.x, b.pos.y);
         let pop = fx.pop_scale(b.id);
-        let r = b.radius * (1.0 + (pop - 1.0) * 0.25);
+        // A full base breathes (slightly larger, brighter ring, wider glow): it is not growing.
+        let full = fx.full_pulse(b.id, state.time);
+        let r = b.radius * (1.0 + (pop - 1.0) * 0.25) * (1.0 + FULL_PULSE_GROWTH * full);
         let t = ring_thickness(b.team, b.value);
-        let col = team_color(b.team);
+        let col = toward_white(team_color(b.team), 0.35 * full);
 
         // Soft drop shadow so the sprite lifts off the map.
         disc(
@@ -143,7 +191,13 @@ fn draw_bases(
         if b.team == Team::Neutral {
             ring(c, r - 0.5, t, s, alpha(col, 0.95));
         } else {
-            ring(c, r - 0.5, t + 3.0, s, alpha(col, 0.22));
+            ring(
+                c,
+                r - 0.5,
+                t + 3.0 + 4.0 * full,
+                s,
+                alpha(col, 0.22 + 0.18 * full),
+            );
             ring(c, r - 0.5, t, s, col);
         }
         let sprite = if b.team == Team::Neutral {
@@ -157,7 +211,7 @@ fn draw_bases(
             disc(c, r, s, Color::new(1.0, 1.0, 1.0, 0.08));
             ring(c, r + t, 1.6, s, Color::new(1.0, 1.0, 1.0, 0.55));
         }
-        if game.selected() == Some(b.id) {
+        if state.armed.contains(&b.id) {
             let a = 0.55 + 0.45 * pulse;
             ring(c, r + t + 3.0 + pulse * 2.0, 2.5, s, alpha(SELECT_COLOR, a));
             ring(
@@ -171,11 +225,20 @@ fn draw_bases(
     }
 }
 
-/// Dashed arrow from the selected base to the hovered target.
+/// Dashed arrows from every armed base to the hovered target.
 fn draw_targeting(game: &Game, state: &BoardState) {
-    let (Some(sel), Some(hov)) = (game.selected(), state.hover) else {
+    let Some(hov) = state.hover else {
         return;
     };
+    if state.toggling {
+        return;
+    }
+    for &sel in &state.armed {
+        draw_arrow(game, state, sel, hov);
+    }
+}
+
+fn draw_arrow(game: &Game, state: &BoardState, sel: BaseId, hov: BaseId) {
     let (a, b) = (&game.bases()[sel], &game.bases()[hov]);
     if a.value < 2.0 || sel == hov {
         return;

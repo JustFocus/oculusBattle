@@ -2,8 +2,8 @@
 use crate::level::generate_bases;
 use crate::rng::Rng;
 use crate::{
-    ai, Base, BaseId, GameEvent, Outcome, Phase, Point, Team, Unit, TICK_SECONDS, UNIT_RADIUS,
-    UNIT_SPEED,
+    ai, Base, BaseId, ClickMode, GameEvent, Outcome, Phase, Point, Team, Unit, TICK_SECONDS,
+    UNIT_RADIUS, UNIT_SPEED,
 };
 
 /// Milliseconds per tick; the AI timer is expressed in ms like the original.
@@ -24,7 +24,10 @@ pub struct Game {
     units: Vec<Unit>,
     level: u32,
     phase: Phase,
-    selected: Option<BaseId>,
+    /// Selected player bases, in selection order, without duplicates.
+    selected: Vec<BaseId>,
+    /// Ticks played in the current level; frozen during an intermission.
+    level_ticks: u64,
     /// Milliseconds since the AI last acted.
     ai_timer: f32,
     rng: Rng,
@@ -39,7 +42,8 @@ impl Game {
             units: Vec::new(),
             level: 1,
             phase: Phase::Playing,
-            selected: None,
+            selected: Vec::new(),
+            level_ticks: 0,
             ai_timer: 0.0,
             rng: Rng::new(seed),
             events: Vec::new(),
@@ -54,6 +58,7 @@ impl Game {
         if self.phase != Phase::Playing {
             return;
         }
+        self.level_ticks += 1;
         self.ai_move();
         self.move_units();
         self.resolve_arrivals();
@@ -61,28 +66,74 @@ impl Game {
         self.check_level_end();
     }
 
-    /// Handles a primary click at a world position: selection/sending while
-    /// playing, or starting the next level during an intermission.
+    /// A plain click: same as `click_with(at, ClickMode::Single)`.
     pub fn click(&mut self, at: Point) {
+        self.click_with(at, ClickMode::Single);
+    }
+
+    /// Handles a primary click at a world position: selection/sending while
+    /// playing, or starting the next level during an intermission (any mode).
+    /// See [`ClickMode`] for what each mode does.
+    pub fn click_with(&mut self, at: Point, mode: ClickMode) {
         if let Phase::Intermission { next_level, .. } = self.phase {
             self.start_level(next_level);
             return;
         }
-        let clicked = self.base_at(at);
-        match (self.selected, clicked) {
-            (_, None) => self.clear_selection(),
-            (None, Some(id)) => {
-                if self.bases[id].team == Team::Player {
-                    self.selected = Some(id);
-                    self.events.push(GameEvent::BaseSelected { base: id });
-                }
-            }
-            (Some(from), Some(to)) => {
+        let Some(id) = self.base_at(at) else {
+            // A ctrl-click that misses keeps the selection being built; other misses clear it.
+            if mode != ClickMode::Toggle {
                 self.clear_selection();
-                if from != to {
-                    self.send_units(from, to);
+            }
+            return;
+        };
+        match mode {
+            ClickMode::All => {
+                let senders: Vec<BaseId> = self.player_bases().filter(|&b| b != id).collect();
+                self.clear_selection();
+                self.send_all(&senders, id);
+            }
+            ClickMode::Toggle if self.bases[id].team == Team::Player => {
+                if self.selected.contains(&id) {
+                    self.deselect(id);
+                } else {
+                    self.select(id);
                 }
             }
+            ClickMode::Single | ClickMode::Toggle => {
+                if self.selected.is_empty() {
+                    if self.bases[id].team == Team::Player {
+                        self.select(id);
+                    }
+                } else if self.selected == [id] {
+                    self.clear_selection();
+                } else {
+                    let senders: Vec<BaseId> =
+                        self.selected.iter().copied().filter(|&b| b != id).collect();
+                    self.clear_selection();
+                    self.send_all(&senders, id);
+                }
+            }
+        }
+    }
+
+    /// Selects every player base (keyboard shortcut). No-op outside play.
+    pub fn select_all(&mut self) {
+        if self.phase != Phase::Playing {
+            return;
+        }
+        let owned: Vec<BaseId> = self.player_bases().collect();
+        for id in owned {
+            if !self.selected.contains(&id) {
+                self.select(id);
+            }
+        }
+    }
+
+    /// Drops the whole selection (keyboard shortcut).
+    pub fn clear_selection(&mut self) {
+        if !self.selected.is_empty() {
+            self.selected.clear();
+            self.events.push(GameEvent::SelectionCleared);
         }
     }
 
@@ -114,9 +165,23 @@ impl Game {
         self.phase
     }
 
-    /// The base the player has selected, if any.
-    pub fn selected(&self) -> Option<BaseId> {
-        self.selected
+    /// The selected player bases, in the order they were selected.
+    pub fn selected(&self) -> &[BaseId] {
+        &self.selected
+    }
+
+    /// Seconds played in the current level. Stops when the level ends, so
+    /// during an intermission it is the time the finished level took.
+    pub fn elapsed_seconds(&self) -> f32 {
+        self.level_ticks as f32 * TICK_SECONDS
+    }
+
+    /// Ids of all bases the player owns.
+    pub fn player_bases(&self) -> impl Iterator<Item = BaseId> + '_ {
+        self.bases
+            .iter()
+            .filter(|b| b.team == Team::Player)
+            .map(|b| b.id)
     }
 
     /// The base whose circle contains `at`, if any (used for hover/click).
@@ -135,7 +200,8 @@ impl Game {
             units: Vec::new(),
             level: 1,
             phase: Phase::Playing,
-            selected: None,
+            selected: Vec::new(),
+            level_ticks: 0,
             ai_timer: 0.0,
             rng: Rng::new(seed),
             events: Vec::new(),
@@ -148,14 +214,34 @@ impl Game {
         self.phase = Phase::Playing;
         self.bases = generate_bases(&mut self.rng);
         self.units.clear();
-        self.selected = None;
+        self.selected.clear();
+        self.level_ticks = 0;
         self.ai_timer = 0.0;
         self.events.push(GameEvent::LevelStarted { level });
     }
 
-    fn clear_selection(&mut self) {
-        if self.selected.take().is_some() {
-            self.events.push(GameEvent::SelectionCleared);
+    fn select(&mut self, id: BaseId) {
+        self.selected.push(id);
+        self.events.push(GameEvent::BaseSelected { base: id });
+    }
+
+    /// Removes one base from the selection; reports `SelectionCleared` when it was the last.
+    fn deselect(&mut self, id: BaseId) {
+        let before = self.selected.len();
+        self.selected.retain(|&b| b != id);
+        if self.selected.len() == before {
+            return;
+        }
+        self.events.push(if self.selected.is_empty() {
+            GameEvent::SelectionCleared
+        } else {
+            GameEvent::BaseDeselected { base: id }
+        });
+    }
+
+    fn send_all(&mut self, senders: &[BaseId], to: BaseId) {
+        for &from in senders {
+            self.send_units(from, to);
         }
     }
 
@@ -247,15 +333,15 @@ impl Game {
             });
             // A captured base must not stay selected, or a later click would
             // send the enemy's units.
-            if self.selected == Some(unit.target) && unit.team != Team::Player {
-                self.clear_selection();
+            if unit.team != Team::Player {
+                self.deselect(unit.target);
             }
         }
     }
 
     fn grow_bases(&mut self) {
         for base in &mut self.bases {
-            if base.team == Team::Neutral || base.value >= base.max_value() {
+            if base.team == Team::Neutral || base.is_full() {
                 continue;
             }
             let multiplier = match base.team {
@@ -503,18 +589,18 @@ mod tests {
 
         // Empty click with nothing selected: no-op, no event.
         game.click(empty);
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         assert!(game.drain_events().is_empty());
 
         // First click on non-owned bases does nothing.
         game.click(at(&game, 1));
         game.click(at(&game, 2));
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         assert!(game.drain_events().is_empty());
 
         // First click on own base selects.
         game.click(at(&game, 0));
-        assert_eq!(game.selected(), Some(0));
+        assert_eq!(game.selected(), [0]);
         assert_eq!(
             game.drain_events(),
             vec![GameEvent::BaseSelected { base: 0 }]
@@ -522,21 +608,21 @@ mod tests {
 
         // Same base again deselects.
         game.click(at(&game, 0));
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         assert_eq!(game.drain_events(), vec![GameEvent::SelectionCleared]);
 
         // Empty space deselects.
         game.click(at(&game, 0));
         game.drain_events();
         game.click(empty);
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         assert_eq!(game.drain_events(), vec![GameEvent::SelectionCleared]);
         assert!(game.units().is_empty());
 
         // Another base sends and deselects.
         game.click(at(&game, 0));
         game.click(at(&game, 2));
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         assert_eq!(game.units().len(), 15);
     }
 
@@ -547,23 +633,23 @@ mod tests {
         game.click(at(&game, 2));
         assert!(game.units().is_empty());
         assert_eq!(game.bases[0].value, 1.0);
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
     }
 
     #[test]
     fn capture_of_selected_base_clears_selection() {
         let mut game = scenario(1.0, 10.0);
         game.click(at(&game, 0));
-        assert_eq!(game.selected(), Some(0));
+        assert_eq!(game.selected(), [0]);
         game.drain_events();
         game.units.push(unit_at(&game, Team::Cpu, 0));
         game.resolve_arrivals();
         assert_eq!(game.bases[0].team, Team::Cpu);
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         assert!(game.drain_events().contains(&GameEvent::SelectionCleared));
         // A later click cannot send from the captured base.
         game.click(at(&game, 0));
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
     }
 
     #[test]
@@ -618,7 +704,7 @@ mod tests {
         assert_eq!(game.phase(), Phase::Playing);
         assert!(game.bases().len() >= 5);
         assert!(game.units().is_empty());
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         assert_eq!(
             game.drain_events(),
             vec![GameEvent::LevelStarted { level: 3 }]
@@ -650,7 +736,7 @@ mod tests {
         game.drain_events();
         game.units.push(unit_at(&game, Team::Player, 1));
         game.tick();
-        assert_eq!(game.selected(), None);
+        assert!(game.selected().is_empty());
         let events = game.drain_events();
         assert!(events.contains(&GameEvent::SelectionCleared));
     }
@@ -704,5 +790,176 @@ mod tests {
         assert_eq!(game.base_at(Point::new(100.0, 250.0)), Some(0));
         assert_eq!(game.base_at(Point::new(100.0 + 44.0, 250.0)), Some(0));
         assert_eq!(game.base_at(Point::new(100.0 + 46.0, 250.0)), None);
+    }
+
+    /// Two player bases (0, 1), a cpu base (2) and a neutral (3).
+    fn two_player_bases() -> Game {
+        let mut game = Game::from_bases(
+            vec![
+                base(0, 100.0, 150.0, Team::Player, 20.0),
+                base(1, 100.0, 350.0, Team::Player, 10.0),
+                base(2, 700.0, 250.0, Team::Cpu, 10.0),
+                base(3, 400.0, 250.0, Team::Neutral, 10.0),
+            ],
+            1,
+        );
+        game.drain_events();
+        game
+    }
+
+    fn sent(events: &[GameEvent]) -> Vec<(BaseId, BaseId, u32)> {
+        events
+            .iter()
+            .filter_map(|e| match *e {
+                GameEvent::UnitsSent {
+                    from, to, count, ..
+                } => Some((from, to, count)),
+                _ => None,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn toggle_builds_a_multi_selection_that_sends_together() {
+        let mut game = two_player_bases();
+        game.click_with(at(&game, 0), ClickMode::Toggle);
+        game.click_with(at(&game, 1), ClickMode::Toggle);
+        assert_eq!(game.selected(), [0, 1]);
+        // Toggle on a non-owned base never selects it; it sends, like a plain click.
+        game.click_with(at(&game, 2), ClickMode::Toggle);
+        assert_eq!(sent(&game.drain_events()), vec![(0, 2, 10), (1, 2, 5)]);
+        assert!(game.selected().is_empty());
+        assert_eq!(game.bases[0].value, 10.0);
+        assert_eq!(game.bases[1].value, 5.0);
+        assert_eq!(game.units().len(), 15);
+    }
+
+    #[test]
+    fn toggle_removes_and_reports_deselection() {
+        let mut game = two_player_bases();
+        game.click_with(at(&game, 0), ClickMode::Toggle);
+        game.click_with(at(&game, 1), ClickMode::Toggle);
+        game.drain_events();
+        game.click_with(at(&game, 0), ClickMode::Toggle);
+        assert_eq!(game.selected(), [1]);
+        assert_eq!(
+            game.drain_events(),
+            vec![GameEvent::BaseDeselected { base: 0 }]
+        );
+        game.click_with(at(&game, 1), ClickMode::Toggle);
+        assert!(game.selected().is_empty());
+        assert_eq!(game.drain_events(), vec![GameEvent::SelectionCleared]);
+    }
+
+    #[test]
+    fn toggle_click_on_empty_ground_keeps_the_selection() {
+        let mut game = two_player_bases();
+        game.click_with(at(&game, 0), ClickMode::Toggle);
+        game.drain_events();
+        game.click_with(Point::new(400.0, 470.0), ClickMode::Toggle);
+        assert_eq!(game.selected(), [0]);
+        assert!(game.drain_events().is_empty());
+    }
+
+    #[test]
+    fn plain_click_on_a_selected_base_reinforces_it_from_the_others() {
+        let mut game = two_player_bases();
+        game.select_all();
+        game.drain_events();
+        game.click(at(&game, 1));
+        assert_eq!(sent(&game.drain_events()), vec![(0, 1, 10)]);
+        assert!(game.selected().is_empty());
+    }
+
+    #[test]
+    fn plain_click_on_own_base_after_toggle_sends() {
+        // Ctrl-select one base, then plain-click another own base: that is a send, as before.
+        let mut game = two_player_bases();
+        game.click_with(at(&game, 0), ClickMode::Toggle);
+        game.click(at(&game, 1));
+        assert_eq!(sent(&game.drain_events()), vec![(0, 1, 10)]);
+    }
+
+    #[test]
+    fn all_mode_sends_from_every_player_base_ignoring_selection() {
+        let mut game = two_player_bases();
+        game.click(at(&game, 1));
+        game.click_with(at(&game, 3), ClickMode::All);
+        assert_eq!(sent(&game.drain_events()), vec![(0, 3, 10), (1, 3, 5)]);
+        assert!(game.selected().is_empty());
+
+        // Targeting an own base pulls from all the others into it.
+        let mut game = two_player_bases();
+        game.click_with(at(&game, 0), ClickMode::All);
+        assert_eq!(sent(&game.drain_events()), vec![(1, 0, 5)]);
+
+        // Empty ground just clears.
+        let mut game = two_player_bases();
+        game.click(at(&game, 0));
+        game.click_with(Point::new(400.0, 470.0), ClickMode::All);
+        assert!(game.selected().is_empty());
+        assert!(game.units().is_empty());
+    }
+
+    #[test]
+    fn select_all_picks_only_player_bases_once() {
+        let mut game = two_player_bases();
+        game.click(at(&game, 1));
+        game.drain_events();
+        game.select_all();
+        assert_eq!(game.selected(), [1, 0]);
+        assert_eq!(
+            game.drain_events(),
+            vec![GameEvent::BaseSelected { base: 0 }]
+        );
+        game.select_all();
+        assert!(game.drain_events().is_empty());
+        game.clear_selection();
+        assert!(game.selected().is_empty());
+    }
+
+    #[test]
+    fn capturing_one_of_several_selected_bases_keeps_the_rest() {
+        let mut game = two_player_bases();
+        game.bases[0].value = 1.0;
+        game.select_all();
+        game.drain_events();
+        game.units.push(unit_at(&game, Team::Cpu, 0));
+        game.resolve_arrivals();
+        assert_eq!(game.selected(), [1]);
+        assert!(game
+            .drain_events()
+            .contains(&GameEvent::BaseDeselected { base: 0 }));
+    }
+
+    #[test]
+    fn timer_counts_play_and_freezes_between_levels() {
+        let mut game = scenario(30.0, 1.0);
+        for _ in 0..120 {
+            game.tick();
+        }
+        assert!((game.elapsed_seconds() - 2.0).abs() < 1e-4);
+        game.bases[1].value = 1.0; // undo two seconds of growth so one hit captures
+        game.units.push(unit_at(&game, Team::Player, 1));
+        game.tick();
+        assert!(matches!(game.phase(), Phase::Intermission { .. }));
+        let final_time = game.elapsed_seconds();
+        assert!((final_time - 121.0 / 60.0).abs() < 1e-4);
+        for _ in 0..100 {
+            game.tick();
+        }
+        assert_eq!(game.elapsed_seconds(), final_time);
+        game.click(Point::new(0.0, 0.0));
+        assert_eq!(game.elapsed_seconds(), 0.0);
+    }
+
+    #[test]
+    fn full_means_at_or_over_the_cap() {
+        let mut game = scenario(10.0, 10.0);
+        assert!(!game.bases[0].is_full());
+        game.bases[0].value = 20.0;
+        assert!(game.bases[0].is_full());
+        game.bases[0].value = 23.0; // reinforcements can push past the cap
+        assert!(game.bases[0].is_full());
     }
 }
