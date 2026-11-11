@@ -79,7 +79,7 @@ Boundary rules:
 Quality gates for every task: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`,
 `cargo test --workspace`, and `scripts/build-web.sh` succeeding.
 
-## Open later
+## Deployment
 
-- Deployment: the old site was served from GitHub Pages. Pages deploy of `dist/` via Actions is
-  a separate decision once the branch is merged.
+GitHub Pages, built and deployed by the `deploy` job in `.github/workflows/ci.yml` on pushes to
+`master` (Pages source: GitHub Actions). The legacy `gh-pages` branch held the original JS site.

@@ -43,6 +43,10 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
+## Deployment
+
+Every push to `master` that passes CI publishes `dist/` to GitHub Pages at https://www.colinfmcmahon.com/oculusBattle/ (see `.github/workflows/ci.yml`).
+
 ## Project layout
 
 - `crates/oculus-core/` - pure, deterministic game rules, with unit tests.
