@@ -113,9 +113,13 @@ pub fn draw_centered(font: &Font, text: &str, cx: f32, cy: f32, style: &TextStyl
         );
     };
     if style.outline {
+        // Fade the outline with the fill so pulsing text does not turn into a gray fill inside
+        // an opaque dark halo.
+        let fade = style.color.a;
+        let outline = alpha(OUTLINE, fade);
         let o = (style.size / 14.0).max(1.0);
         let d = o * std::f32::consts::FRAC_1_SQRT_2;
-        draw(0.0, o * 0.6, alpha(OUTLINE, 0.5));
+        draw(0.0, o * 0.6, alpha(outline, 0.5));
         for (dx, dy) in [
             (o, 0.0),
             (-o, 0.0),
@@ -126,7 +130,7 @@ pub fn draw_centered(font: &Font, text: &str, cx: f32, cy: f32, style: &TextStyl
             (d, -d),
             (-d, -d),
         ] {
-            draw(dx, dy, OUTLINE);
+            draw(dx, dy, outline);
         }
     }
     draw(0.0, 0.0, style.color);
@@ -226,9 +230,9 @@ fn dim_board(view: &View, a: f32) {
     draw_rectangle(b.x, b.y, b.w, b.h, Color::new(0.02, 0.015, 0.04, a));
 }
 
-/// Gentle 0.55..1.0 pulse for call-to-action text.
+/// Gentle 0.6..1.0 pulse for call-to-action text.
 fn prompt_pulse(time: f64) -> f32 {
-    0.775 + 0.225 * (time * 3.0).sin() as f32
+    0.8 + 0.2 * (time * 3.0).sin() as f32
 }
 
 pub fn draw_title(assets: &Assets, view: &View, time: f64) {
