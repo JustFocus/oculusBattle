@@ -177,10 +177,12 @@ impl ParticleSim {
         });
     }
 
+    #[cfg(test)]
     pub fn len(&self) -> usize {
         self.particles.len()
     }
 
+    #[cfg(test)]
     pub fn is_empty(&self) -> bool {
         self.particles.is_empty()
     }
@@ -192,27 +194,6 @@ impl ParticleSim {
     /// Live particles, oldest first.
     pub fn particles(&self) -> impl Iterator<Item = &Particle> {
         self.particles.iter()
-    }
-}
-
-/// Accumulates fractional emissions so a rate in particles/second yields the same total
-/// count regardless of frame rate. Keep one per continuous emitter.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct RateAccumulator {
-    carry: f32,
-}
-
-impl RateAccumulator {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns how many whole particles to emit this frame.
-    pub fn step(&mut self, rate_per_sec: f32, dt: f32) -> u32 {
-        self.carry += rate_per_sec.max(0.0) * dt.max(0.0);
-        let n = self.carry.floor();
-        self.carry -= n;
-        n as u32
     }
 }
 
@@ -687,17 +668,6 @@ mod tests {
             x
         };
         assert!((run(30) - run(240)).abs() < 1e-3);
-    }
-
-    #[test]
-    fn rate_accumulation_is_frame_rate_independent() {
-        for fps in [24.0f32, 30.0, 60.0, 144.0, 240.0] {
-            let mut acc = RateAccumulator::new();
-            let frames = fps as u32 * 5;
-            let total: u32 = (0..frames).map(|_| acc.step(37.0, 1.0 / fps)).sum();
-            // 37/s for 5 s = 185, within one particle of carry.
-            assert!((184..=185).contains(&total), "fps {fps}: {total}");
-        }
     }
 
     #[test]
