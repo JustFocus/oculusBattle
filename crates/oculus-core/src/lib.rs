@@ -55,6 +55,12 @@ impl Base {
     pub fn max_value(&self) -> f32 {
         self.start_value * 2.0
     }
+
+    /// At or over the growth cap. A full player or cpu base produces nothing until it drops
+    /// below the cap again (neutral bases never grow at all).
+    pub fn is_full(&self) -> bool {
+        self.value >= self.max_value()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -75,6 +81,22 @@ pub enum Phase {
     Intermission { outcome: Outcome, next_level: u32 },
 }
 
+/// How a click interprets the base under the cursor (see [`Game::click_with`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ClickMode {
+    /// Select an own base; with a selection, send from every selected base to the clicked
+    /// one. Clicking the only selected base, or empty ground, deselects.
+    #[default]
+    Single,
+    /// Add or remove an own base from the selection (ctrl/cmd-click). On any other base it
+    /// behaves like `Single`; on empty ground it does nothing, so a near miss keeps the
+    /// selection.
+    Toggle,
+    /// Send from every player base to the clicked base at once (shift-click), regardless of
+    /// the current selection.
+    All,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
     Victory,
@@ -90,6 +112,11 @@ pub enum GameEvent {
     BaseSelected {
         base: BaseId,
     },
+    /// One base left a selection that still has others in it.
+    BaseDeselected {
+        base: BaseId,
+    },
+    /// The selection became empty.
     SelectionCleared,
     /// `count` units left `from` heading for `to`.
     UnitsSent {
